@@ -36,7 +36,22 @@ A minimalist, high-performance note-taking application designed for speed and si
    npm install
    ```
 
-### Running the Application
+## 🐳 Docker Deployment
+
+The easiest way to run the full stack in production-like mode is using Docker Compose:
+
+1. Ensure you have Docker and Docker Compose installed.
+2. Run the following command in the root directory:
+   ```bash
+   docker-compose up --build
+   ```
+3. Access the application:
+   - **Frontend**: [http://localhost:8080](http://localhost:8080)
+   - **Backend API**: [http://localhost:3000](http://localhost:3000)
+
+The SQLite database is persisted in a Docker volume named `notes-data`.
+
+### Running the Application (Development)
 
 Start both the frontend and backend in development mode:
 
