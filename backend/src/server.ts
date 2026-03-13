@@ -17,6 +17,8 @@ const dbPath = path.join(__dirname, '../data/notes.db');
 const APP_PASSWORD = process.env.APP_PASSWORD || '123';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 const COOKIE_NAME = 'auth_token';
+const SESSION_DURATION = '365d';
+const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000; // 1 year
 
 // Ensure data directory exists
 import fs from 'fs';
@@ -50,7 +52,17 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
-// Authentication middleware
+// Helper to set auth cookie
+const setAuthCookie = (res: any, token: string) => {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: COOKIE_MAX_AGE
+  });
+};
+
+// Authentication middleware with rolling session
 const authenticate = (req: any, res: any, next: any) => {
   const token = req.cookies[COOKIE_NAME];
   if (!token) {
@@ -58,7 +70,14 @@ const authenticate = (req: any, res: any, next: any) => {
   }
 
   try {
-    jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    
+    // Refresh token on every request (rolling session)
+    // Only refresh if it's been more than 24h to avoid too many refreshes, 
+    // but for simplicity here we just refresh it.
+    const newToken = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
+    setAuthCookie(res, newToken);
+    
     next();
   } catch (err) {
     res.clearCookie(COOKIE_NAME);
@@ -70,13 +89,8 @@ const authenticate = (req: any, res: any, next: any) => {
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
   if (password === APP_PASSWORD) {
-    const token = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: '24h' });
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    });
+    const token = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
+    setAuthCookie(res, token);
     return res.json({ success: true });
   }
   res.status(401).json({ error: 'Invalid password' });
@@ -95,6 +109,9 @@ app.get('/api/auth/check', (req, res) => {
 
   try {
     jwt.verify(token, JWT_SECRET);
+    // Also extend on check
+    const newToken = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
+    setAuthCookie(res, newToken);
     res.json({ authenticated: true });
   } catch (err) {
     res.json({ authenticated: false });
@@ -176,6 +193,16 @@ app.patch('/api/notes/:id', (req, res) => {
     res.json(updatedNote);
   } catch (error) {
     res.status(400).json({ error: error });
+  }
+});
+
+// Delete all notes
+app.delete('/api/notes/clear', authenticate, (req, res) => {
+  try {
+    db.prepare('DELETE FROM notes').run();
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to delete all notes' });
   }
 });
 

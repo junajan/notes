@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, computed, ref, nextTick } from 'vue'
+import { onMounted, onUnmounted, computed, ref, nextTick, watch } from 'vue'
 import { useNoteStore } from './stores/noteStore'
 import draggable from 'vuedraggable'
 
@@ -7,6 +7,7 @@ const store = useNoteStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lineNumbersRef = ref<HTMLDivElement | null>(null)
 const showDeleteModal = ref(false)
+const showClearAllModal = ref(false)
 const isMobile = ref(window.matchMedia('(max-width: 768px)').matches)
 
 const password = ref('')
@@ -19,10 +20,28 @@ const updateMobileStatus = () => {
 onMounted(async () => {
   await store.checkAuth()
   if (store.isAuthenticated) {
-    store.fetchNotes()
+    await store.fetchNotes()
+    
+    // Restore active note from URL
+    const params = new URLSearchParams(window.location.search)
+    const noteId = params.get('note')
+    if (noteId && store.notes.some(n => n.id === noteId)) {
+      store.activeNoteId = noteId
+    }
   }
   window.addEventListener('keydown', handleGlobalKeyDown, { capture: true })
   window.addEventListener('resize', updateMobileStatus)
+})
+
+// Sync activeNoteId with URL
+watch(() => store.activeNoteId, (newId) => {
+  const url = new URL(window.location.href)
+  if (newId) {
+    url.searchParams.set('note', newId)
+  } else {
+    url.searchParams.delete('note')
+  }
+  window.history.replaceState({}, '', url.toString())
 })
 
 onUnmounted(() => {
@@ -46,6 +65,11 @@ const confirmDelete = async () => {
     await store.deleteNote(store.activeNoteId)
     showDeleteModal.value = false
   }
+}
+
+const confirmClearAll = async () => {
+  await store.deleteAllNotes()
+  showClearAllModal.value = false
 }
 
 const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -196,6 +220,7 @@ const closeMoreMenu = () => {}
 
       <div class="status-bar">
         <button @click="showDeleteModal = true" class="delete-btn">Delete Note</button>
+        <button @click="showClearAllModal = true" class="clear-all-btn">Clear All Notes</button>
         <span style="flex: 1"></span>
         <span>{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
         <button @click="store.logout" class="logout-btn">Logout</button>
@@ -204,6 +229,7 @@ const closeMoreMenu = () => {}
     
     <div v-else class="editor-container" style="justify-content: center; align-items: center; color: var(--text-muted);">
       <p>Select a note or create a new one to get started.</p>
+      <button @click="showClearAllModal = true" v-if="store.notes.length > 0" class="clear-all-btn" style="margin-top: 1rem;">Clear All Notes</button>
     </div>
 
     <!-- Delete Confirmation Modal -->
@@ -215,6 +241,20 @@ const closeMoreMenu = () => {}
           <div class="modal-actions">
             <button class="btn btn-secondary" @click="showDeleteModal = false">Cancel</button>
             <button class="btn btn-danger" @click="confirmDelete">Delete</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Clear All Confirmation Modal -->
+    <Teleport to="body">
+      <div v-if="showClearAllModal" class="modal-overlay" @click.self="showClearAllModal = false">
+        <div class="modal-content">
+          <h3 style="color: #ef4444;">Clear All Notes</h3>
+          <p>Are you sure you want to delete <strong>ALL</strong> {{ store.notes.length }} notes? This action is permanent and cannot be undone.</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" @click="showClearAllModal = false">Cancel</button>
+            <button class="btn btn-danger" @click="confirmClearAll">Yes, Delete Everything</button>
           </div>
         </div>
       </div>

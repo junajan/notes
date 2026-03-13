@@ -118,6 +118,16 @@ export const useNoteStore = defineStore('notes', () => {
     }
   }
 
+  async function deleteAllNotes() {
+    try {
+      await axios.delete('/api/notes/clear')
+      notes.value = []
+      activeNoteId.value = null
+    } catch (err) {
+      error.value = 'Failed to delete all notes'
+    }
+  }
+
   async function reorderNotes() {
     try {
       const orders = notes.value.map((note, index) => ({
