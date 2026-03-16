@@ -26,18 +26,20 @@ body {
   color: var(--text-main);
   min-height: 100vh;
   margin: 0;
+  /* Ensure the body is scrollable to trigger pull-to-refresh */
+  overflow-y: auto;
   overscroll-behavior-y: auto;
 }
 
 #app {
-  height: 100%;
+  /* Remove height: 100% to allow content to define page height */
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
@@ -129,7 +131,7 @@ body {
   flex-direction: column;
   padding: 0.5rem 0;
   gap: 0.75rem;
-  overflow: hidden;
+  /* Remove overflow: hidden to allow body to handle scroll */
 }
 
 .title-input {
@@ -147,10 +149,11 @@ body {
   display: flex;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-  overflow: hidden;
+  /* Removed overflow: hidden */
   position: relative;
   background: white;
   box-shadow: var(--shadow-sm);
+  min-height: 400px; /* Ensure a minimum height for the editor */
 }
 
 .line-numbers {
@@ -178,6 +181,9 @@ body {
   color: var(--text-main);
   font-family: 'Courier New', monospace;
   background: transparent;
+  /* Remove overflow: auto to prevent internal scroll blocking the body */
+  overflow: hidden; 
+  height: auto;
 }
 
 .status-bar {
