@@ -38,6 +38,10 @@ jobs:
           username: ${{ secrets.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Load environment (NVM, PATH, etc.)
+            [ -f ~/.zshrc ] && source ~/.zshrc
+            [ -f ~/.bashrc ] && source ~/.bashrc
+            
             cd ${{ secrets.REMOTE_PATH }}
             
             # Install dependencies for the whole project
