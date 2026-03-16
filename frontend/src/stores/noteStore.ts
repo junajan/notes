@@ -154,6 +154,7 @@ export const useNoteStore = defineStore('notes', () => {
     createNote,
     updateNote,
     deleteNote,
+    deleteAllNotes,
     reorderNotes
   }
 })
