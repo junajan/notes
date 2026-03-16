@@ -1,10 +1,10 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
-import { NoteSchema, CreateNoteSchema, UpdateNoteSchema } from '@notes/shared';
+import { CreateNoteSchema, UpdateNoteSchema } from '@notes/shared';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
@@ -53,7 +53,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Helper to set auth cookie
-const setAuthCookie = (res: any, token: string) => {
+const setAuthCookie = (res: Response, token: string) => {
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -63,18 +63,16 @@ const setAuthCookie = (res: any, token: string) => {
 };
 
 // Authentication middleware with rolling session
-const authenticate = (req: any, res: any, next: any) => {
+const authenticate = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies[COOKIE_NAME];
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    jwt.verify(token, JWT_SECRET);
     
     // Refresh token on every request (rolling session)
-    // Only refresh if it's been more than 24h to avoid too many refreshes, 
-    // but for simplicity here we just refresh it.
     const newToken = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
     setAuthCookie(res, newToken);
     
