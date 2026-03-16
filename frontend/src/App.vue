@@ -142,6 +142,10 @@ const onDragEnd = () => {
   store.reorderNotes()
 }
 
+const refreshPage = () => {
+  window.location.reload()
+}
+
 // Dummy closeMoreMenu to satisfy onUnmounted for now (from previous task)
 const closeMoreMenu = () => {}
 </script>
@@ -192,7 +196,13 @@ const closeMoreMenu = () => {}
           </button>
         </template>
       </draggable>
-      <button @click="addNewNote" class="add-tab" title="Add New Note">+</button>
+      
+      <div class="tab-actions">
+        <button @click="refreshPage" class="refresh-tab" title="Refresh Page">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+        </button>
+        <button @click="addNewNote" class="add-tab" title="Add New Note">+</button>
+      </div>
     </div>
 
     <main v-if="store.activeNote" class="editor-container">

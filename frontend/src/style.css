@@ -97,6 +97,39 @@ body {
   font-weight: 600;
 }
 
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.refresh-tab {
+  width: 36px;
+  height: 36px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--primary-color);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-tab:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+  border-color: var(--primary-color);
+}
+
+.refresh-tab:active {
+  transform: translateY(0) scale(0.95);
+}
+
 .add-tab {
   width: 36px;
   height: 36px;
