@@ -317,6 +317,10 @@ app.delete('/api/notes/:id', (req, res) => {
   res.status(204).send();
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+}
+
+export { app, db };
