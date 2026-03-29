@@ -5,3 +5,4 @@ dist
 backend/data/notes.db
 frontend/dist
 .env
+.idea
