@@ -188,14 +188,16 @@ const moveLine = (direction: number) => {
   const textarea = textareaRef.value
   if (!textarea || !store.activeNoteId || !store.activeNote) return
 
-  const { selectionStart, selectionEnd, value } = textarea
+  const { selectionStart, value } = textarea
   const lines = value.split('\n')
   
   // Find which line the cursor is on
   let currentPos = 0
   let lineIndex = -1
   for (let i = 0; i < lines.length; i++) {
-    const lineEnd = currentPos + lines[i].length
+    const line = lines[i]
+    if (line === undefined) continue
+    const lineEnd = currentPos + line.length
     if (selectionStart >= currentPos && selectionStart <= lineEnd) {
       lineIndex = i
       break
@@ -211,8 +213,12 @@ const moveLine = (direction: number) => {
   // Swap lines
   const newLines = [...lines]
   const temp = newLines[lineIndex]
-  newLines[lineIndex] = newLines[targetIndex]
-  newLines[targetIndex] = temp
+  const targetLine = newLines[targetIndex]
+  
+  if (temp !== undefined && targetLine !== undefined) {
+    newLines[lineIndex] = targetLine
+    newLines[targetIndex] = temp
+  }
 
   const newValue = newLines.join('\n')
   store.updateNote(store.activeNoteId, { content: newValue })
@@ -221,15 +227,21 @@ const moveLine = (direction: number) => {
   nextTick(() => {
     let newPos = 0
     for (let i = 0; i < targetIndex; i++) {
-      newPos += newLines[i].length + 1
+      const line = newLines[i]
+      if (line !== undefined) {
+        newPos += line.length + 1
+      }
     }
     // Maintain relative offset within the line
-    const offsetInLine = selectionStart - currentPos
-    const finalPos = newPos + Math.min(offsetInLine, newLines[targetIndex].length)
-    
-    textarea.focus()
-    textarea.setSelectionRange(finalPos, finalPos)
-    syncScroll()
+    const currentTargetLine = newLines[targetIndex]
+    if (currentTargetLine !== undefined) {
+      const offsetInLine = selectionStart - currentPos
+      const finalPos = newPos + Math.min(offsetInLine, currentTargetLine.length)
+      
+      textarea.focus()
+      textarea.setSelectionRange(finalPos, finalPos)
+      syncScroll()
+    }
   })
 }
 
@@ -246,15 +258,15 @@ const syncScroll = () => {
 
 const handleTitleChange = (e: Event) => {
   const target = e.target as HTMLInputElement
-  if (store.activeNoteId) {
-    store.updateNote(store.activeNoteId, { title: target.value })
+  if (store.activeNoteId && target) {
+    store.updateNote(store.activeNoteId, { title: target.value || '' })
   }
 }
 
 const handleContentChange = (e: Event) => {
   const target = e.target as HTMLTextAreaElement
-  if (store.activeNoteId) {
-    store.updateNote(store.activeNoteId, { content: target.value })
+  if (store.activeNoteId && target) {
+    store.updateNote(store.activeNoteId, { content: target.value || '' })
   }
   nextTick(syncScroll)
 }
