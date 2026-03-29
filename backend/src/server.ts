@@ -35,10 +35,24 @@ db.exec(`
     title TEXT NOT NULL,
     content TEXT,
     positionIndex INTEGER NOT NULL,
+    isPublic INTEGER DEFAULT 0,
+    isPublicEditable INTEGER DEFAULT 0,
     createdAt TEXT NOT NULL,
     updatedAt TEXT NOT NULL
   )
 `);
+
+// Simple migration: check if columns exist
+try {
+  db.prepare('SELECT isPublic FROM notes LIMIT 1').get();
+} catch (e) {
+  db.exec('ALTER TABLE notes ADD COLUMN isPublic INTEGER DEFAULT 0');
+}
+try {
+  db.prepare('SELECT isPublicEditable FROM notes LIMIT 1').get();
+} catch (e) {
+  db.exec('ALTER TABLE notes ADD COLUMN isPublicEditable INTEGER DEFAULT 0');
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -86,6 +100,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
 // Login route
 app.post('/api/login', (req, res) => {
   const { password } = req.body;
+  console.log(`Login attempt with password: ${password}, expected: ${APP_PASSWORD}`);
   if (password === APP_PASSWORD) {
     const token = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
     setAuthCookie(res, token);
@@ -113,6 +128,42 @@ app.get('/api/auth/check', (req, res) => {
     res.json({ authenticated: true });
   } catch (err) {
     res.json({ authenticated: false });
+  }
+});
+
+// Get a single public note (No Auth)
+app.get('/api/public/notes/:id', (req, res) => {
+  const { id } = req.params;
+  const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1').get(id);
+  
+  if (!note) {
+    return res.status(404).json({ error: 'Public note not found' });
+  }
+  
+  res.json(note);
+});
+
+// Update a public note (No Auth)
+app.patch('/api/public/notes/:id', (req, res) => {
+  const { id } = req.params;
+  try {
+    const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1 AND isPublicEditable = 1').get(id);
+    if (!note) {
+      return res.status(404).json({ error: 'Public editable note not found' });
+    }
+
+    const input = UpdateNoteSchema.parse(req.body);
+    const updatedAt = new Date().toISOString();
+
+    const fields = Object.keys(input).map(key => `${key} = @${key}`).concat('updatedAt = @updatedAt').join(', ');
+    const update = db.prepare(`UPDATE notes SET ${fields} WHERE id = @id`);
+    
+    update.run({ ...input, updatedAt, id });
+
+    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
+    res.json(updatedNote);
+  } catch (error) {
+    res.status(400).json({ error: error });
   }
 });
 

@@ -9,12 +9,13 @@ axios.defaults.withCredentials = true
 export const useNoteStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
   const activeNoteId = ref<string | null>(null)
+  const publicNote = ref<Note | null>(null) // For unauthenticated public view
   const isSaving = ref(false)
   const error = ref<string | null>(null)
   const isAuthenticated = ref<boolean | null>(null) // null means unknown (checking)
 
   const activeNote = computed(() => 
-    notes.value.find(n => n.id === activeNoteId.value) || null
+    notes.value.find(n => n.id === activeNoteId.value) || publicNote.value || null
   )
 
   async function checkAuth() {
@@ -26,6 +27,36 @@ export const useNoteStore = defineStore('notes', () => {
       isAuthenticated.value = false
       return false
     }
+  }
+
+  async function fetchPublicNote(id: string) {
+    try {
+      const response = await axios.get<Note>(`/api/public/notes/${id}`)
+      publicNote.value = response.data
+      activeNoteId.value = response.data.id
+    } catch (err: any) {
+      error.value = 'Public note not found or inaccessible'
+    }
+  }
+
+  async function updatePublicNote(id: string, updates: UpdateNoteInput) {
+    // Immediate local update
+    if (publicNote.value && publicNote.value.id === id) {
+      publicNote.value = { ...publicNote.value, ...updates } as Note
+    }
+
+    if (debounceTimer) clearTimeout(debounceTimer)
+    
+    isSaving.value = true
+    debounceTimer = setTimeout(async () => {
+      try {
+        await axios.patch(`/api/public/notes/${id}`, updates)
+        isSaving.value = false
+      } catch (err) {
+        error.value = 'Failed to save changes to public note'
+        isSaving.value = false
+      }
+    }, 500)
   }
 
   async function login(password: string) {
@@ -47,6 +78,7 @@ export const useNoteStore = defineStore('notes', () => {
       isAuthenticated.value = false
       notes.value = []
       activeNoteId.value = null
+      publicNote.value = null
     } catch (err) {
       console.error('Logout failed')
     }
@@ -73,7 +105,9 @@ export const useNoteStore = defineStore('notes', () => {
       const input: CreateNoteInput = {
         title,
         content: '',
-        positionIndex: notes.value.length
+        positionIndex: notes.value.length,
+        isPublic: 0,
+        isPublicEditable: 0
       }
       const response = await axios.post<Note>('/api/notes', input)
       notes.value.push(response.data)
@@ -86,6 +120,10 @@ export const useNoteStore = defineStore('notes', () => {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   async function updateNote(id: string, updates: UpdateNoteInput) {
+    if (!isAuthenticated.value) {
+      return updatePublicNote(id, updates)
+    }
+
     // Immediate local update
     const index = notes.value.findIndex(n => n.id === id)
     if (index !== -1) {
@@ -147,7 +185,9 @@ export const useNoteStore = defineStore('notes', () => {
     isSaving,
     error,
     isAuthenticated,
+    publicNote,
     checkAuth,
+    fetchPublicNote,
     login,
     logout,
     fetchNotes,

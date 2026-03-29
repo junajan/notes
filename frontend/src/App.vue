@@ -12,6 +12,7 @@ const isMobile = ref(window.matchMedia('(max-width: 768px)').matches)
 
 const password = ref('')
 const isLoggingIn = ref(false)
+const copyFeedback = ref(false)
 
 const updateMobileStatus = () => {
   isMobile.value = window.matchMedia('(max-width: 768px)').matches
@@ -19,16 +20,21 @@ const updateMobileStatus = () => {
 
 onMounted(async () => {
   await store.checkAuth()
+  
+  const params = new URLSearchParams(window.location.search)
+  const noteId = params.get('note')
+
   if (store.isAuthenticated) {
     await store.fetchNotes()
-    
     // Restore active note from URL
-    const params = new URLSearchParams(window.location.search)
-    const noteId = params.get('note')
     if (noteId && store.notes.some(n => n.id === noteId)) {
       store.activeNoteId = noteId
     }
+  } else if (noteId) {
+    // Try to fetch as public note if not authenticated
+    await store.fetchPublicNote(noteId)
   }
+  
   window.addEventListener('keydown', handleGlobalKeyDown, { capture: true })
   window.addEventListener('resize', updateMobileStatus)
 })
@@ -60,6 +66,32 @@ const handleLogin = async () => {
   isLoggingIn.value = false
 }
 
+const copyLink = async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href)
+    copyFeedback.value = true
+    setTimeout(() => {
+      copyFeedback.value = false
+    }, 2000)
+  } catch (err) {
+    console.error('Failed to copy: ', err)
+  }
+}
+
+const togglePublic = () => {
+  if (store.activeNote && store.isAuthenticated) {
+    const newValue = store.activeNote.isPublic ? 0 : 1
+    store.updateNote(store.activeNote.id, { isPublic: newValue })
+  }
+}
+
+const togglePublicEditable = () => {
+  if (store.activeNote && store.isAuthenticated) {
+    const newValue = store.activeNote.isPublicEditable ? 0 : 1
+    store.updateNote(store.activeNote.id, { isPublicEditable: newValue })
+  }
+}
+
 const confirmDelete = async () => {
   if (store.activeNoteId) {
     await store.deleteNote(store.activeNoteId)
@@ -74,16 +106,131 @@ const confirmClearAll = async () => {
 
 const handleGlobalKeyDown = (e: KeyboardEvent) => {
   const isD = e.code === 'KeyD' || e.key.toLowerCase() === 'd'
+  const isX = e.code === 'KeyX' || e.key.toLowerCase() === 'x'
+  const isUp = e.code === 'ArrowUp'
+  const isDown = e.code === 'ArrowDown'
   const isModifier = (e.metaKey || e.ctrlKey || e.altKey) && e.shiftKey
+  const isCmdOrCtrl = e.metaKey || e.ctrlKey
+  const isAltShift = e.altKey && e.shiftKey
 
   if (isModifier && isD) {
     if (document.activeElement === textareaRef.value) {
-      console.log('Duplicate shortcut detected:', e.key)
       e.preventDefault()
       e.stopPropagation()
       duplicateCurrentLine()
     }
   }
+
+  if (isAltShift && (isUp || isDown)) {
+    if (document.activeElement === textareaRef.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      moveLine(isUp ? -1 : 1)
+    }
+  }
+
+  if (isCmdOrCtrl && isX) {
+    if (document.activeElement === textareaRef.value) {
+      const textarea = textareaRef.value as HTMLTextAreaElement
+      if (textarea.selectionStart === textarea.selectionEnd) {
+        e.preventDefault()
+        e.stopPropagation()
+        cutCurrentLine()
+      }
+    }
+  }
+}
+
+const cutCurrentLine = async () => {
+  const textarea = textareaRef.value
+  if (!textarea || !store.activeNoteId || !store.activeNote) return
+
+  const { selectionStart, value } = textarea
+  const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
+  let lineEnd = value.indexOf('\n', selectionStart)
+  
+  let lineToCut = ''
+  let newValue = ''
+  let newCursorPos = lineStart
+
+  if (lineEnd === -1) {
+    // Last line
+    lineToCut = value.substring(lineStart)
+    newValue = value.substring(0, lineStart)
+    // If it's not the only line and has a trailing newline from previous line
+    if (lineStart > 0 && newValue.endsWith('\n')) {
+        newValue = newValue.slice(0, -1)
+        newCursorPos = Math.max(0, lineStart - 1)
+    }
+  } else {
+    // Middle or first line
+    lineToCut = value.substring(lineStart, lineEnd + 1) // include \n
+    newValue = value.substring(0, lineStart) + value.substring(lineEnd + 1)
+    newCursorPos = lineStart
+  }
+
+  try {
+    // Strip trailing newline for clipboard if we included it
+    await navigator.clipboard.writeText(lineToCut.endsWith('\n') ? lineToCut.slice(0, -1) : lineToCut)
+    store.updateNote(store.activeNoteId, { content: newValue })
+    
+    nextTick(() => {
+      textarea.focus()
+      textarea.setSelectionRange(newCursorPos, newCursorPos)
+      syncScroll()
+    })
+  } catch (err) {
+    console.error('Failed to cut line:', err)
+  }
+}
+
+const moveLine = (direction: number) => {
+  const textarea = textareaRef.value
+  if (!textarea || !store.activeNoteId || !store.activeNote) return
+
+  const { selectionStart, selectionEnd, value } = textarea
+  const lines = value.split('\n')
+  
+  // Find which line the cursor is on
+  let currentPos = 0
+  let lineIndex = -1
+  for (let i = 0; i < lines.length; i++) {
+    const lineEnd = currentPos + lines[i].length
+    if (selectionStart >= currentPos && selectionStart <= lineEnd) {
+      lineIndex = i
+      break
+    }
+    currentPos = lineEnd + 1 // +1 for \n
+  }
+
+  if (lineIndex === -1) return
+
+  const targetIndex = lineIndex + direction
+  if (targetIndex < 0 || targetIndex >= lines.length) return
+
+  // Swap lines
+  const newLines = [...lines]
+  const temp = newLines[lineIndex]
+  newLines[lineIndex] = newLines[targetIndex]
+  newLines[targetIndex] = temp
+
+  const newValue = newLines.join('\n')
+  store.updateNote(store.activeNoteId, { content: newValue })
+
+  // Calculate new cursor position
+  nextTick(() => {
+    let newPos = 0
+    for (let i = 0; i < targetIndex; i++) {
+      newPos += newLines[i].length + 1
+    }
+    // Maintain relative offset within the line
+    const offsetInLine = selectionStart - currentPos
+    const finalPos = newPos + Math.min(offsetInLine, newLines[targetIndex].length)
+    
+    textarea.focus()
+    textarea.setSelectionRange(finalPos, finalPos)
+    syncScroll()
+  })
 }
 
 const lineNumbers = computed(() => {
@@ -151,7 +298,7 @@ const closeMoreMenu = () => {}
     <p>Loading...</p>
   </div>
 
-  <div v-else-if="!store.isAuthenticated" class="login-container">
+  <div v-else-if="!store.isAuthenticated && !store.activeNote" class="login-container">
     <div class="login-card">
       <h1>Online Notes</h1>
       <p>Please enter your password to access your notes.</p>
@@ -174,7 +321,7 @@ const closeMoreMenu = () => {}
   </div>
 
   <div v-else class="container">
-    <div class="tabs-wrapper">
+    <div v-if="store.isAuthenticated" class="tabs-wrapper">
       <draggable 
         v-model="store.notes" 
         item-key="id" 
@@ -196,13 +343,47 @@ const closeMoreMenu = () => {}
     </div>
 
     <main v-if="store.activeNote" class="editor-container">
-      <input 
-        type="text" 
-        :value="store.activeNote.title" 
-        @input="handleTitleChange"
-        class="title-input"
-        placeholder="Note Title"
-      />
+      <div class="title-row">
+        <input 
+          type="text" 
+          :value="store.activeNote.title" 
+          @input="handleTitleChange"
+          class="title-input"
+          placeholder="Note Title"
+          :readonly="!store.isAuthenticated && !store.activeNote.isPublicEditable"
+        />
+        <div class="title-actions">
+          <button 
+            v-if="store.isAuthenticated && store.activeNote.isPublic"
+            @click="togglePublicEditable" 
+            class="public-toggle-btn" 
+            :class="{ 'is-editable': store.activeNote.isPublicEditable }"
+            :title="store.activeNote.isPublicEditable ? 'Disable Public Edits' : 'Enable Public Edits'"
+          >
+            {{ store.activeNote.isPublicEditable ? 'Edits Allowed' : 'Read Only' }}
+          </button>
+          <button 
+            v-if="store.isAuthenticated"
+            @click="togglePublic" 
+            class="public-toggle-btn" 
+            :class="{ 'is-public': store.activeNote.isPublic }"
+            :title="store.activeNote.isPublic ? 'Make Private' : 'Make Public'"
+          >
+            {{ store.activeNote.isPublic ? 'Public' : 'Private' }}
+          </button>
+          <button 
+            @click="copyLink" 
+            class="copy-link-btn" 
+            :title="copyFeedback ? 'Copied!' : 'Copy Link'"
+            :class="{ 'copy-success': copyFeedback }"
+          >
+            <span v-if="!copyFeedback">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            </span>
+            <span v-else>Copied!</span>
+          </button>
+        </div>
+      </div>
       
       <div class="editor-wrapper">
         <div class="line-numbers" ref="lineNumbersRef">
@@ -215,15 +396,26 @@ const closeMoreMenu = () => {}
           @scroll="syncScroll"
           class="content-area"
           placeholder="Start writing..."
+          :readonly="!store.isAuthenticated && !store.activeNote.isPublicEditable"
         ></textarea>
       </div>
 
       <div class="status-bar">
-        <button @click="showDeleteModal = true" class="delete-btn">Delete Note</button>
-        <button @click="showClearAllModal = true" class="clear-all-btn">Clear All Notes</button>
-        <span style="flex: 1"></span>
-        <span>{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
-        <button @click="store.logout" class="logout-btn">Logout</button>
+        <template v-if="store.isAuthenticated">
+          <button @click="showDeleteModal = true" class="delete-btn">Delete Note</button>
+          <button @click="showClearAllModal = true" class="clear-all-btn">Clear All Notes</button>
+          <span style="flex: 1"></span>
+          <span>{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
+          <button @click="store.logout" class="logout-btn">Logout</button>
+        </template>
+        <template v-else>
+          <span class="public-badge" :class="{ 'editable': store.activeNote.isPublicEditable }">
+            {{ store.activeNote.isPublicEditable ? 'Public View (Editable)' : 'Public View (Read-Only)' }}
+          </span>
+          <span style="flex: 1"></span>
+          <span v-if="store.activeNote.isPublicEditable">{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
+          <button @click="store.isAuthenticated = false; store.publicNote = null; store.activeNoteId = null" class="logout-btn">Back to Login</button>
+        </template>
       </div>
     </main>
     
