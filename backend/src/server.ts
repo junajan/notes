@@ -9,6 +9,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
+import { rateLimit } from 'express-rate-limit';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, '../data/notes.db');
@@ -16,9 +17,32 @@ const dbPath = path.join(__dirname, '../data/notes.db');
 // Auth configuration
 const APP_PASSWORD = process.env.APP_PASSWORD || '123';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'your-secret-key') {
+  console.error('FATAL: JWT_SECRET must be set in production!');
+  process.exit(1);
+}
+
 const COOKIE_NAME = 'auth_token';
 const SESSION_DURATION = '365d';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60 * 1000; // 1 year
+
+// Rate limiters
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Limit each IP to 10 login attempts per window
+  message: { error: 'Too many login attempts, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const publicApiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // Limit each IP to 100 requests per minute
+  message: { error: 'Too many requests, please slow down' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Ensure data directory exists
 import fs from 'fs';
@@ -66,6 +90,19 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(cookieParser());
 
+// Basic CSRF protection for state-changing requests
+app.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  
+  // We expect a custom header for all mutation requests
+  if (!req.get('X-Notes-Requested-With')) {
+    return res.status(403).json({ error: 'Security verification failed' });
+  }
+  next();
+});
+
 // Helper to set auth cookie
 const setAuthCookie = (res: Response, token: string) => {
   res.cookie(COOKIE_NAME, token, {
@@ -98,9 +135,8 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Login route
-app.post('/api/login', (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
   const { password } = req.body;
-  console.log(`Login attempt with password: ${password}, expected: ${APP_PASSWORD}`);
   if (password === APP_PASSWORD) {
     const token = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
     setAuthCookie(res, token);
@@ -132,7 +168,7 @@ app.get('/api/auth/check', (req, res) => {
 });
 
 // Get a single public note (No Auth)
-app.get('/api/public/notes/:id', (req, res) => {
+app.get('/api/public/notes/:id', publicApiLimiter, (req, res) => {
   const { id } = req.params;
   const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1').get(id);
   
@@ -144,7 +180,7 @@ app.get('/api/public/notes/:id', (req, res) => {
 });
 
 // Update a public note (No Auth)
-app.patch('/api/public/notes/:id', (req, res) => {
+app.patch('/api/public/notes/:id', publicApiLimiter, (req, res) => {
   const { id } = req.params;
   try {
     const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1 AND isPublicEditable = 1').get(id);

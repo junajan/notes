@@ -3,8 +3,9 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import type { Note, CreateNoteInput, UpdateNoteInput } from '@notes/shared'
 
-// Configure axios for credentials (cookies)
+// Configure axios for credentials (cookies) and CSRF protection
 axios.defaults.withCredentials = true
+axios.defaults.headers.common['X-Notes-Requested-With'] = 'XMLHttpRequest'
 
 export const useNoteStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
