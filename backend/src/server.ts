@@ -10,6 +10,7 @@ import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
+import { ZodError } from 'zod';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dbPath = path.join(__dirname, '../data/notes.db');
@@ -43,6 +44,19 @@ const publicApiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Sanitize and handle errors to avoid leakage
+const handleError = (res: Response, error: unknown, defaultMessage = 'An unexpected error occurred', status = 400) => {
+  if (error instanceof ZodError) {
+    return res.status(400).json({ error: 'Validation failed', details: error.errors });
+  }
+  
+  // Log the real error internally
+  console.error('[Error]:', error);
+  
+  // Return a generic message to the client
+  res.status(status).json({ error: defaultMessage });
+};
 
 // Ensure data directory exists
 import fs from 'fs';
@@ -199,7 +213,7 @@ app.patch('/api/public/notes/:id', publicApiLimiter, (req, res) => {
     const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
     res.json(updatedNote);
   } catch (error) {
-    res.status(400).json({ error: error });
+    handleError(res, error, 'Failed to update note');
   }
 });
 
@@ -232,7 +246,7 @@ app.post('/api/notes', (req, res) => {
 
     res.status(201).json(newNote);
   } catch (error) {
-    res.status(400).json({ error: error });
+    handleError(res, error, 'Failed to create note');
   }
 });
 
@@ -277,7 +291,7 @@ app.patch('/api/notes/:id', (req, res) => {
     const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
     res.json(updatedNote);
   } catch (error) {
-    res.status(400).json({ error: error });
+    handleError(res, error, 'Failed to update note');
   }
 });
 
