@@ -29,7 +29,7 @@ jobs:
       - name: Run Backend Tests
         run: |
           cd backend
-          NODE_ENV=test npm test
+          JWT_SECRET=ci-test-secret NODE_ENV=test npm test
 
   deploy:
     name: Deploy to Remote Server
