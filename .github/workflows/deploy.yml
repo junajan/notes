@@ -44,6 +44,7 @@ jobs:
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: "placeholder" # Will be updated by ssh-keyscan in the next step
 
       - name: Adding Known Hosts
         run: ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
