@@ -72,6 +72,14 @@ const confirmClearAll = async () => {
 </script>
 
 <template>
+  <div class="sea-background">
+    <div class="sea-creature fish" style="top: 15%; animation-delay: 0s;">🐟</div>
+    <div class="sea-creature fish-reverse" style="top: 35%; animation-delay: 5s;">🐠</div>
+    <div class="sea-creature fish" style="top: 65%; animation-delay: 2s;">🐡</div>
+    <div class="sea-creature turtle" style="top: 80%; animation-delay: 10s;">🐢</div>
+    <div class="sea-creature fish-reverse" style="top: 50%; animation-delay: 12s;">🐟</div>
+  </div>
+
   <div v-if="store.isAuthenticated === null" class="login-container">
     <p>Loading...</p>
   </div>

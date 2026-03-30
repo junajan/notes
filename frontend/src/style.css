@@ -332,6 +332,54 @@
   --input-bg: #000000;
 }
 
+/* Sea Theme Animations */
+.sea-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+  overflow: hidden;
+  display: none;
+}
+
+.sea-theme .sea-background {
+  display: block;
+}
+
+.sea-creature {
+  position: absolute;
+  font-size: 2rem;
+  user-select: none;
+  opacity: 0.6;
+}
+
+.fish {
+  animation: swim-right 15s linear infinite;
+}
+
+.fish-reverse {
+  animation: swim-left 20s linear infinite;
+}
+
+.turtle {
+  animation: swim-right 35s linear infinite;
+  font-size: 3rem;
+  opacity: 0.4;
+}
+
+@keyframes swim-right {
+  from { left: -10%; }
+  to { left: 110%; }
+}
+
+@keyframes swim-left {
+  from { left: 110%; }
+  to { left: -10%; }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
