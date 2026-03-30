@@ -47,11 +47,9 @@ onMounted(async () => {
 })
 
 watch(() => store.activeNoteId, (newId) => {
-  const url = new URL(window.location.href)
+  const url = new URL(window.location.origin)
   if (newId) {
     url.searchParams.set('note', newId)
-  } else {
-    url.searchParams.delete('note')
   }
   window.history.replaceState({}, '', url.toString())
 })
