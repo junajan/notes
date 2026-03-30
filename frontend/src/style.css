@@ -176,7 +176,34 @@ body {
   font-family: inherit;
   font-size: inherit;
   padding: 0;
-  width: 100%;
+  width: auto;
+  max-width: fit-content;
+  flex: 0 1 auto;
+}
+
+.copy-slug-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.copy-slug-btn:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: var(--primary-color);
+}
+
+.copy-slug-btn.copy-success {
+  color: #166534;
+  background: #f0fdf4;
 }
 
 .slug-prefix {
