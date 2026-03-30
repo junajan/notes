@@ -14,22 +14,19 @@ export const useNoteStore = defineStore('notes', () => {
   const isSaving = ref(false)
   const error = ref<string | null>(null)
   const isAuthenticated = ref<boolean | null>(null) // null means unknown (checking)
-  const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
+  const theme = ref(localStorage.getItem('theme') || 'light')
 
   // Apply theme on initial load
-  if (isDarkMode.value) {
-    document.body.classList.add('dark-theme')
-  }
+  document.body.className = theme.value === 'light' ? '' : `${theme.value}-theme`
 
-  function toggleDarkMode() {
-    isDarkMode.value = !isDarkMode.value
-    if (isDarkMode.value) {
-      document.body.classList.add('dark-theme')
-      localStorage.setItem('theme', 'dark')
-    } else {
-      document.body.classList.remove('dark-theme')
-      localStorage.setItem('theme', 'light')
-    }
+  function toggleTheme() {
+    const themes = ['light', 'dark', 'pink']
+    const currentIndex = themes.indexOf(theme.value)
+    const nextIndex = (currentIndex + 1) % themes.length
+    theme.value = themes[nextIndex] || 'light'
+    
+    document.body.className = theme.value === 'light' ? '' : `${theme.value}-theme`
+    localStorage.setItem('theme', theme.value)
   }
 
   const activeNote = computed(() => 
@@ -215,14 +212,14 @@ export const useNoteStore = defineStore('notes', () => {
     isSaving,
     error,
     isAuthenticated,
-    isDarkMode,
+    theme,
     publicNote,
     checkAuth,
     fetchPublicNote,
     fetchNoteBySlug,
     login,
     logout,
-    toggleDarkMode,
+    toggleTheme,
     fetchNotes,
     createNote,
     updateNote,
