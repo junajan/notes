@@ -12,12 +12,29 @@
   --line-number-bg: #f1f5f9;
   --danger-color: #ef4444;
   --danger-hover: #dc2626;
+  --editor-bg: #ffffff;
+  --border-color: #e2e8f0;
+  --input-bg: #ffffff;
+}
+
+.dark-theme {
+  --bg-color: #0f172a;
+  --tab-bg: #1e293b;
+  --tab-active: #334155;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --line-number-bg: #1e293b;
+  --editor-bg: #1e293b;
+  --border-color: #334155;
+  --input-bg: #0f172a;
+  --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 body {
@@ -67,6 +84,34 @@ body {
 
 .tab-bar::-webkit-scrollbar {
   display: none;
+}
+
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  background: var(--editor-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle:hover {
+  background: var(--tab-bg);
+  color: var(--text-main);
+  border-color: var(--primary-color);
 }
 
 .tab {
@@ -197,8 +242,8 @@ body {
 }
 
 .public-toggle-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--editor-bg);
+  border: 1px solid var(--border-color);
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
   color: var(--text-muted);
@@ -239,13 +284,13 @@ body {
 }
 
 .public-badge {
-  background: #f1f5f9;
+  background: var(--line-number-bg);
   color: var(--text-muted);
   padding: 0.25rem 0.75rem;
   border-radius: 9999px;
   font-weight: 600;
   font-size: 0.7rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
 }
 
 .public-badge.editable {
@@ -255,8 +300,8 @@ body {
 }
 
 .copy-link-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--editor-bg);
+  border: 1px solid var(--border-color);
   padding: 0.5rem;
   border-radius: 8px;
   color: var(--text-muted);
@@ -275,7 +320,7 @@ body {
 .copy-link-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
-  background: #f5f3ff;
+  background: rgba(99, 102, 241, 0.05);
 }
 
 .copy-link-btn.copy-success {
@@ -287,11 +332,11 @@ body {
 .editor-wrapper {
   flex: 1;
   display: flex;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   /* Removed overflow: hidden */
   position: relative;
-  background: white;
+  background: var(--editor-bg);
   box-shadow: var(--shadow-sm);
   min-height: 400px; /* Ensure a minimum height for the editor */
 }
@@ -307,7 +352,7 @@ body {
   text-align: right;
   overflow: hidden;
   user-select: none;
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid var(--border-color);
 }
 
 .content-area {
@@ -333,7 +378,7 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   padding: 1rem 0;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--border-color);
   gap: 0.75rem;
 }
 
@@ -352,8 +397,8 @@ body {
 }
 
 .delete-btn, .clear-all-btn, .logout-btn {
-  background: white;
-  border: 1px solid #e2e8f0;
+  background: var(--editor-bg);
+  border: 1px solid var(--border-color);
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
   color: var(--text-muted);
@@ -365,20 +410,20 @@ body {
 
 .delete-btn:hover {
   color: var(--danger-color);
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .clear-all-btn:hover {
   color: var(--danger-color);
-  border-color: #fecaca;
-  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.05);
 }
 
 .logout-btn:hover {
   color: var(--text-main);
-  border-color: #cbd5e1;
-  background: #f1f5f9;
+  border-color: var(--border-color);
+  background: var(--tab-bg);
 }
 
 /* Modal Styles */
@@ -388,7 +433,7 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
@@ -397,10 +442,11 @@ body {
 }
 
 .modal-content {
-  background: white;
+  background: var(--editor-bg);
   padding: 2rem;
   border-radius: 16px;
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
   max-width: 400px;
   width: 90%;
   text-align: center;
@@ -427,12 +473,13 @@ body {
 }
 
 .btn-secondary {
-  background: #f1f5f9;
+  background: var(--tab-bg);
   color: var(--text-main);
+  border: 1px solid var(--border-color);
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: var(--tab-active);
 }
 
 .btn-danger {
@@ -456,9 +503,10 @@ body {
 }
 
 .login-card {
-  background: white;
+  background: var(--editor-bg);
   padding: 3rem 2.5rem;
   border-radius: 20px;
+  border: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   width: 100%;
   max-width: 400px;
@@ -481,18 +529,19 @@ body {
 .password-input {
   width: 100%;
   padding: 0.85rem 1.25rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   margin-bottom: 1rem;
   font-size: 1rem;
   outline: none;
   transition: all 0.2s;
-  background: #f8fafc;
+  background: var(--input-bg);
+  color: var(--text-main);
 }
 
 .password-input:focus {
   border-color: var(--primary-color);
-  background: white;
+  background: var(--editor-bg);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
