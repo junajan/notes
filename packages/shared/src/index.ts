@@ -5,6 +5,7 @@ export const NoteSchema = z.object({
   title: z.string().min(1, "Title is required"),
   content: z.string(),
   positionIndex: z.number().int(),
+  slug: z.string().regex(/^[a-z0-9-]+$/, "Slug must only contain lowercase letters, numbers, and hyphens").optional().nullable(),
   isPublic: z.number().int().default(0), // 0 for false, 1 for true
   isPublicEditable: z.number().int().default(0), // 0 for false, 1 for true
   createdAt: z.string().datetime(),

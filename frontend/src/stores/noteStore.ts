@@ -40,6 +40,18 @@ export const useNoteStore = defineStore('notes', () => {
     }
   }
 
+  async function fetchNoteBySlug(slug: string) {
+    try {
+      const response = await axios.get<Note>(`/api/public/notes/slug/${slug}`)
+      publicNote.value = response.data
+      activeNoteId.value = response.data.id
+      return response.data
+    } catch (err: any) {
+      error.value = 'Note with this slug not found'
+      return null
+    }
+  }
+
   async function updatePublicNote(id: string, updates: UpdateNoteInput) {
     // Immediate local update
     if (publicNote.value && publicNote.value.id === id) {
@@ -189,6 +201,7 @@ export const useNoteStore = defineStore('notes', () => {
     publicNote,
     checkAuth,
     fetchPublicNote,
+    fetchNoteBySlug,
     login,
     logout,
     fetchNotes,

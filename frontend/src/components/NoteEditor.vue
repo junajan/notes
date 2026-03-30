@@ -35,6 +35,14 @@ const handleTitleChange = (e: Event) => {
   }
 }
 
+const handleSlugChange = (e: Event) => {
+  const target = e.target as HTMLInputElement
+  if (store.activeNoteId && target) {
+    const slug = target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+    store.updateNote(store.activeNoteId, { slug: slug || null })
+  }
+}
+
 const handleContentChange = (e: Event) => {
   const target = e.target as HTMLTextAreaElement
   if (store.activeNoteId && target) {
@@ -45,7 +53,13 @@ const handleContentChange = (e: Event) => {
 
 const copyLink = async () => {
   try {
-    await navigator.clipboard.writeText(window.location.href)
+    let url = window.location.origin
+    if (store.activeNote?.isPublic && store.activeNote?.slug) {
+      url += '/' + store.activeNote.slug
+    } else {
+      url += '/?note=' + store.activeNoteId
+    }
+    await navigator.clipboard.writeText(url)
     copyFeedback.value = true
     setTimeout(() => {
       copyFeedback.value = false
@@ -226,14 +240,26 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 <template>
   <main v-if="store.activeNote" class="editor-container">
     <div class="title-row">
-      <input 
-        type="text" 
-        :value="store.activeNote.title" 
-        @input="handleTitleChange"
-        class="title-input"
-        placeholder="Note Title"
-        :readonly="!store.isAuthenticated && !store.activeNote.isPublicEditable"
-      />
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+        <input 
+          type="text" 
+          :value="store.activeNote.title" 
+          @input="handleTitleChange"
+          class="title-input"
+          placeholder="Note Title"
+          :readonly="!store.isAuthenticated && !store.activeNote.isPublicEditable"
+        />
+        <div v-if="store.isAuthenticated" class="slug-row">
+          <span class="slug-prefix">slug: /</span>
+          <input 
+            type="text" 
+            :value="store.activeNote.slug || ''" 
+            @input="handleSlugChange"
+            class="slug-input"
+            placeholder="custom-slug"
+          />
+        </div>
+      </div>
       <div class="title-actions">
         <button 
           v-if="store.isAuthenticated && store.activeNote.isPublic"

@@ -73,6 +73,7 @@ db.exec(`
     title TEXT NOT NULL,
     content TEXT,
     positionIndex INTEGER NOT NULL,
+    slug TEXT UNIQUE,
     isPublic INTEGER DEFAULT 0,
     isPublicEditable INTEGER DEFAULT 0,
     createdAt TEXT NOT NULL,
@@ -90,6 +91,11 @@ try {
   db.prepare('SELECT isPublicEditable FROM notes LIMIT 1').get();
 } catch (e) {
   db.exec('ALTER TABLE notes ADD COLUMN isPublicEditable INTEGER DEFAULT 0');
+}
+try {
+  db.prepare('SELECT slug FROM notes LIMIT 1').get();
+} catch (e) {
+  db.exec('ALTER TABLE notes ADD COLUMN slug TEXT');
 }
 
 const app = express();
@@ -217,6 +223,18 @@ app.patch('/api/public/notes/:id', publicApiLimiter, (req, res) => {
   }
 });
 
+// Get a single public note by slug (No Auth)
+app.get('/api/public/notes/slug/:slug', publicApiLimiter, (req, res) => {
+  const { slug } = req.params;
+  const note = db.prepare('SELECT * FROM notes WHERE slug = ? AND isPublic = 1').get(slug);
+  
+  if (!note) {
+    return res.status(404).json({ error: 'Public note with this slug not found' });
+  }
+  
+  res.json(note);
+});
+
 // Protected routes
 app.use('/api/notes', authenticate);
 
@@ -239,8 +257,8 @@ app.post('/api/notes', (req, res) => {
     };
 
     const insert = db.prepare(`
-      INSERT INTO notes (id, title, content, positionIndex, createdAt, updatedAt)
-      VALUES (@id, @title, @content, @positionIndex, @createdAt, @updatedAt)
+      INSERT INTO notes (id, title, content, positionIndex, slug, createdAt, updatedAt)
+      VALUES (@id, @title, @content, @positionIndex, @slug, @createdAt, @updatedAt)
     `);
     insert.run(newNote);
 
@@ -316,6 +334,17 @@ app.delete('/api/notes/:id', (req, res) => {
   
   res.status(204).send();
 });
+
+// Serve frontend in production
+const frontendPath = path.join(__dirname, '../../frontend/dist');
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    }
+  });
+}
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(port, () => {

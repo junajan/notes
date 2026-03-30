@@ -20,14 +20,27 @@ onMounted(async () => {
   
   const params = new URLSearchParams(window.location.search)
   const noteId = params.get('note')
+  
+  // Handle slug routing
+  const path = window.location.pathname
+  const slug = path.startsWith('/') ? path.substring(1) : ''
 
   if (store.isAuthenticated) {
     await store.fetchNotes()
     if (noteId && store.notes.some(n => n.id === noteId)) {
       store.activeNoteId = noteId
+    } else if (slug) {
+      const noteBySlug = store.notes.find(n => n.slug === slug)
+      if (noteBySlug) {
+        store.activeNoteId = noteBySlug.id
+      }
     }
-  } else if (noteId) {
-    await store.fetchPublicNote(noteId)
+  } else {
+    if (noteId) {
+      await store.fetchPublicNote(noteId)
+    } else if (slug) {
+      await store.fetchNoteBySlug(slug)
+    }
   }
   
   window.addEventListener('resize', updateMobileStatus)

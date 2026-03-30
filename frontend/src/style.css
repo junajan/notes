@@ -160,6 +160,29 @@ body {
   background: transparent;
 }
 
+.slug-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  gap: 0.25rem;
+}
+
+.slug-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--primary-color);
+  font-family: inherit;
+  font-size: inherit;
+  padding: 0;
+  width: 100%;
+}
+
+.slug-prefix {
+  white-space: nowrap;
+}
+
 .title-row {
   display: flex;
   align-items: center;
