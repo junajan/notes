@@ -138,6 +138,7 @@ export const useNoteStore = defineStore('notes', () => {
         title,
         content: '',
         positionIndex: notes.value.length,
+        slug: null,
         isPublic: 0,
         isPublicEditable: 0
       }

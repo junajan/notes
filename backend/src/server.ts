@@ -251,6 +251,7 @@ app.post('/api/notes', (req, res) => {
     const now = new Date().toISOString();
     const newNote = {
       id: uuidv4(),
+      slug: null, // Default to null
       ...input,
       createdAt: now,
       updatedAt: now
