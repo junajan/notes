@@ -70,6 +70,7 @@ body {
 }
 
 .tab {
+  position: relative;
   padding: 0.75rem 1.25rem;
   background: transparent;
   border: none;
@@ -90,7 +91,21 @@ body {
   color: var(--text-main);
 }
 
+.public-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--primary-color);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.tab.active .public-indicator {
+  opacity: 1;
+}
+
 .tab.active {
+
   background: var(--tab-active);
   color: var(--text-main);
   box-shadow: var(--shadow-sm);
