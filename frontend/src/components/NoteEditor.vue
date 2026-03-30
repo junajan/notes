@@ -6,7 +6,6 @@ const store = useNoteStore()
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lineNumbersRef = ref<HTMLDivElement | null>(null)
 const copyFeedback = ref(false)
-const slugCopyFeedback = ref(false)
 
 defineEmits(['openDeleteModal', 'openClearAllModal'])
 
@@ -67,20 +66,6 @@ const copyLink = async () => {
     }, 2000)
   } catch (err) {
     console.error('Failed to copy: ', err)
-  }
-}
-
-const copySlugLink = async () => {
-  if (!store.activeNote?.slug) return
-  try {
-    const url = window.location.origin + '/' + store.activeNote.slug
-    await navigator.clipboard.writeText(url)
-    slugCopyFeedback.value = true
-    setTimeout(() => {
-      slugCopyFeedback.value = false
-    }, 2000)
-  } catch (err) {
-    console.error('Failed to copy slug link: ', err)
   }
 }
 
@@ -273,16 +258,6 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
             class="slug-input"
             placeholder="custom-slug"
           />
-          <button 
-            v-if="store.activeNote.slug"
-            @click="copySlugLink" 
-            class="copy-slug-btn" 
-            :class="{ 'copy-success': slugCopyFeedback }"
-            :title="slugCopyFeedback ? 'Copied!' : 'Copy Slug Link'"
-          >
-            <svg v-if="!slugCopyFeedback" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-            <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-          </button>
         </div>
       </div>
       <div class="title-actions">
