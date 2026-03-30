@@ -105,6 +105,233 @@
   --shadow: 0 4px 6px -1px rgba(217, 70, 239, 0.1), 0 2px 4px -2px rgba(217, 70, 239, 0.1);
 }
 
+.forest-theme {
+  --primary-color: #166534;
+  --primary-hover: #14532d;
+  --bg-color: #f0fdf4;
+  --tab-bg: #dcfce7;
+  --tab-active: #ffffff;
+  --text-main: #064e3b;
+  --text-muted: #15803d;
+  --line-number-bg: #f7fee7;
+  --editor-bg: #ffffff;
+  --border-color: #bbf7d0;
+  --input-bg: #ffffff;
+}
+
+.desert-theme {
+  --primary-color: #c2410c;
+  --primary-hover: #9a3412;
+  --bg-color: #fffaf0;
+  --tab-bg: #ffedd5;
+  --tab-active: #ffffff;
+  --text-main: #7c2d12;
+  --text-muted: #9a3412;
+  --line-number-bg: #fffbf0;
+  --editor-bg: #ffffff;
+  --border-color: #fed7aa;
+  --input-bg: #ffffff;
+}
+
+.nordic-theme {
+  --primary-color: #334155;
+  --primary-hover: #1e293b;
+  --bg-color: #f8fafc;
+  --tab-bg: #e2e8f0;
+  --tab-active: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --line-number-bg: #f1f5f9;
+  --editor-bg: #ffffff;
+  --border-color: #cbd5e1;
+  --input-bg: #ffffff;
+}
+
+.deep-space-theme {
+  --primary-color: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --bg-color: #000000;
+  --tab-bg: #111111;
+  --tab-active: #1a1a1a;
+  --text-main: #ffffff;
+  --text-muted: #a78bfa;
+  --line-number-bg: #0a0a0a;
+  --editor-bg: #050505;
+  --border-color: #333333;
+  --input-bg: #000000;
+  --shadow: 0 0 20px rgba(139, 92, 246, 0.2);
+}
+
+.sepia-theme {
+  --primary-color: #78350f;
+  --primary-hover: #451a03;
+  --bg-color: #f5f2e0;
+  --tab-bg: #e7e0c9;
+  --tab-active: #fdfbf7;
+  --text-main: #451a03;
+  --text-muted: #92400e;
+  --line-number-bg: #ede9d5;
+  --editor-bg: #fdfbf7;
+  --border-color: #d6ccb2;
+  --input-bg: #fdfbf7;
+}
+
+.hacker-theme {
+  --primary-color: #22c55e;
+  --primary-hover: #16a34a;
+  --bg-color: #000000;
+  --tab-bg: #050505;
+  --tab-active: #0a0a0a;
+  --text-main: #22c55e;
+  --text-muted: #166534;
+  --line-number-bg: #000000;
+  --editor-bg: #000000;
+  --border-color: #166534;
+  --input-bg: #000000;
+}
+
+.cyberpunk-theme {
+  --primary-color: #f0abfc;
+  --primary-hover: #e879f9;
+  --bg-color: #0f0720;
+  --tab-bg: #1e1039;
+  --tab-active: #2d1b4d;
+  --text-main: #22d3ee;
+  --text-muted: #f0abfc;
+  --line-number-bg: #1e1039;
+  --editor-bg: #160b2e;
+  --border-color: #d946ef;
+  --input-bg: #0f0720;
+  --shadow: 0 0 15px rgba(217, 70, 239, 0.3);
+}
+
+.crt-theme {
+  --primary-color: #fbbf24;
+  --primary-hover: #f59e0b;
+  --bg-color: #1a1a1a;
+  --tab-bg: #262626;
+  --tab-active: #333333;
+  --text-main: #fbbf24;
+  --text-muted: #92400e;
+  --line-number-bg: #1a1a1a;
+  --editor-bg: #1a1a1a;
+  --border-color: #b45309;
+  --input-bg: #1a1a1a;
+}
+
+.espresso-theme {
+  --primary-color: #a16207;
+  --primary-hover: #854d0e;
+  --bg-color: #2d241e;
+  --tab-bg: #3d3028;
+  --tab-active: #4d3d33;
+  --text-main: #fef3c7;
+  --text-muted: #d97706;
+  --line-number-bg: #2d241e;
+  --editor-bg: #3d3028;
+  --border-color: #5d432c;
+  --input-bg: #2d241e;
+}
+
+.matcha-theme {
+  --primary-color: #65a30d;
+  --primary-hover: #4d7c0f;
+  --bg-color: #f7fee7;
+  --tab-bg: #ecfccb;
+  --tab-active: #ffffff;
+  --text-main: #365314;
+  --text-muted: #4d7c0f;
+  --line-number-bg: #f7fee7;
+  --editor-bg: #ffffff;
+  --border-color: #d9f99d;
+  --input-bg: #ffffff;
+}
+
+.grape-theme {
+  --primary-color: #9333ea;
+  --primary-hover: #7e22ce;
+  --bg-color: #faf5ff;
+  --tab-bg: #f3e8ff;
+  --tab-active: #ffffff;
+  --text-main: #581c87;
+  --text-muted: #7e22ce;
+  --line-number-bg: #fdfaff;
+  --editor-bg: #ffffff;
+  --border-color: #e9d5ff;
+  --input-bg: #ffffff;
+}
+
+.slate-theme {
+  --primary-color: #475569;
+  --primary-hover: #334155;
+  --bg-color: #f1f5f9;
+  --tab-bg: #e2e8f0;
+  --tab-active: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #475569;
+  --line-number-bg: #f8fafc;
+  --editor-bg: #ffffff;
+  --border-color: #cbd5e1;
+  --input-bg: #ffffff;
+}
+
+.dracula-theme {
+  --primary-color: #ff79c6;
+  --primary-hover: #bd93f9;
+  --bg-color: #282a36;
+  --tab-bg: #44475a;
+  --tab-active: #6272a4;
+  --text-main: #f8f8f2;
+  --text-muted: #bd93f9;
+  --line-number-bg: #282a36;
+  --editor-bg: #282a36;
+  --border-color: #44475a;
+  --input-bg: #282a36;
+}
+
+.paper-theme {
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+  --bg-color: #ffffff;
+  --tab-bg: #f3f4f6;
+  --tab-active: #ffffff;
+  --text-main: #111827;
+  --text-muted: #6b7280;
+  --line-number-bg: #f9fafb;
+  --editor-bg: #ffffff;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+}
+
+.unicorn-theme {
+  --primary-color: #f472b6;
+  --primary-hover: #fb7185;
+  --bg-color: #fff1f2;
+  --tab-bg: #ffe4e6;
+  --tab-active: #ffffff;
+  --text-main: #881337;
+  --text-muted: #fb7185;
+  --line-number-bg: #fff5f5;
+  --editor-bg: #ffffff;
+  --border-color: #fecdd3;
+  --input-bg: #ffffff;
+  --shadow: 0 0 15px rgba(244, 114, 182, 0.2);
+}
+
+.batman-theme {
+  --primary-color: #facc15;
+  --primary-hover: #eab308;
+  --bg-color: #111111;
+  --tab-bg: #1a1a1a;
+  --tab-active: #222222;
+  --text-main: #ffffff;
+  --text-muted: #facc15;
+  --line-number-bg: #000000;
+  --editor-bg: #111111;
+  --border-color: #333333;
+  --input-bg: #000000;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -189,9 +416,27 @@ body {
   border-color: var(--primary-color);
 }
 
-.theme-toggle.pink {
-  color: #db2777;
-}
+.theme-toggle.pink { color: #db2777; }
+.theme-toggle.orange { color: #f59e0b; }
+.theme-toggle.banana { color: #eab308; }
+.theme-toggle.sea { color: #0d9488; }
+.theme-toggle.colorful { color: #d946ef; }
+.theme-toggle.forest { color: #166534; }
+.theme-toggle.desert { color: #c2410c; }
+.theme-toggle.nordic { color: #334155; }
+.theme-toggle.deep-space { color: #8b5cf6; }
+.theme-toggle.sepia { color: #78350f; }
+.theme-toggle.hacker { color: #22c55e; }
+.theme-toggle.cyberpunk { color: #f0abfc; }
+.theme-toggle.crt { color: #fbbf24; }
+.theme-toggle.espresso { color: #a16207; }
+.theme-toggle.matcha { color: #65a30d; }
+.theme-toggle.grape { color: #9333ea; }
+.theme-toggle.slate { color: #475569; }
+.theme-toggle.dracula { color: #ff79c6; }
+.theme-toggle.paper { color: #3b82f6; }
+.theme-toggle.unicorn { color: #f472b6; }
+.theme-toggle.batman { color: #facc15; }
 
 .tab {
   position: relative;

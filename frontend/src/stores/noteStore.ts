@@ -20,7 +20,12 @@ export const useNoteStore = defineStore('notes', () => {
   document.body.className = theme.value === 'light' ? '' : `${theme.value}-theme`
 
   function toggleTheme() {
-    const themes = ['light', 'dark', 'pink', 'orange', 'banana', 'sea', 'colorful']
+    const themes = [
+      'light', 'dark', 'pink', 'orange', 'banana', 'sea', 'colorful',
+      'forest', 'desert', 'nordic', 'deep-space', 'sepia', 'hacker', 
+      'cyberpunk', 'crt', 'espresso', 'matcha', 'grape', 'slate', 
+      'dracula', 'paper', 'unicorn', 'batman'
+    ]
     const currentIndex = themes.indexOf(theme.value)
     const nextIndex = (currentIndex + 1) % themes.length
     theme.value = themes[nextIndex] || 'light'
