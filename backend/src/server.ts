@@ -48,7 +48,7 @@ const publicApiLimiter = rateLimit({
 // Sanitize and handle errors to avoid leakage
 const handleError = (res: Response, error: unknown, defaultMessage = 'An unexpected error occurred', status = 400) => {
   if (error instanceof ZodError) {
-    return res.status(400).json({ error: 'Validation failed', details: error.errors });
+    return res.status(400).json({ error: 'Validation failed', details: error.issues });
   }
   
   // Log the real error internally

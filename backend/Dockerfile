@@ -1,5 +1,5 @@
 # Use Node.js as the base image
-FROM node:20-slim
+FROM node:24-slim
 
 # Install python and build tools for better-sqlite3
 RUN apt-get update && apt-get install -y \

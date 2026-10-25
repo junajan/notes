@@ -22,7 +22,11 @@ export const CreateNoteSchema = NoteSchema.omit({
 
 export type CreateNoteInput = z.infer<typeof CreateNoteSchema>;
 
-export const UpdateNoteSchema = NoteSchema.partial().omit({
+// Zod 4 applies .default() even inside .partial(), which would reset these flags on every PATCH
+export const UpdateNoteSchema = NoteSchema.extend({
+  isPublic: z.number().int(),
+  isPublicEditable: z.number().int(),
+}).partial().omit({
   id: true,
   createdAt: true
 });

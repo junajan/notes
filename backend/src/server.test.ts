@@ -67,5 +67,23 @@ describe('Notes API', () => {
       
       expect(res.status).toBe(404);
     });
+
+    it('should keep sharing flags when a partial update omits them', async () => {
+      const id = '00000000-0000-4000-a000-000000000003';
+      db.prepare(`
+        INSERT INTO notes (id, title, content, positionIndex, isPublic, isPublicEditable, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, 'Editable Note', 'Content', 0, 1, 1, new Date().toISOString(), new Date().toISOString());
+
+      const res = await request(app)
+        .patch(`/api/public/notes/${id}`)
+        .set('X-Notes-Requested-With', 'XMLHttpRequest')
+        .send({ content: 'Edited' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.content).toBe('Edited');
+      expect(res.body.isPublic).toBe(1);
+      expect(res.body.isPublicEditable).toBe(1);
+    });
   });
 });
