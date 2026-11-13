@@ -9,18 +9,97 @@ const copyFeedback = ref(false)
 
 defineEmits(['openDeleteModal'])
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeyDown, { capture: true })
+  resizeObserver = new ResizeObserver(() => scheduleMeasure())
+  if (textareaRef.value) resizeObserver.observe(textareaRef.value)
+  // Web fonts change glyph widths, so wrapping can differ once they finish loading
+  document.fonts?.ready.then(() => scheduleMeasure())
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true })
+  resizeObserver?.disconnect()
+  if (measureFrame) cancelAnimationFrame(measureFrame)
+  mirror?.remove()
+  mirror = null
 })
 
 const lineNumbers = computed(() => {
   const lines = (store.activeNote?.content || '').split('\n').length
   return Array.from({ length: Math.max(lines, 1) }, (_, i) => i + 1)
 })
+
+/*
+ * Gutter alignment with soft-wrapped lines.
+ * The textarea wraps long lines onto several visual rows, but the gutter has one number per
+ * logical line. Without compensation every wrapped line shifts all following numbers up, so
+ * they drift out of step and the last lines end up without numbers. We lay the text out in a
+ * hidden mirror with the textarea's font and content width, measure each logical line's
+ * rendered height, and give its gutter row the same height.
+ */
+const lineHeights = ref<number[]>([])
+let mirror: HTMLDivElement | null = null
+let measureFrame: number | null = null
+
+const measureLineHeights = () => {
+  measureFrame = null
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  if (!mirror) {
+    mirror = document.createElement('div')
+    mirror.setAttribute('aria-hidden', 'true')
+    document.body.appendChild(mirror)
+  }
+
+  const style = getComputedStyle(textarea)
+  const contentWidth = textarea.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
+  Object.assign(mirror.style, {
+    position: 'absolute',
+    visibility: 'hidden',
+    pointerEvents: 'none',
+    top: '0',
+    left: '-10000px',
+    boxSizing: 'content-box',
+    width: `${Math.max(contentWidth, 0)}px`,
+    padding: '0',
+    border: '0',
+    whiteSpace: 'pre-wrap',
+    overflowWrap: style.overflowWrap,
+    wordBreak: style.wordBreak,
+    font: style.font,
+    letterSpacing: style.letterSpacing,
+    lineHeight: style.lineHeight,
+    tabSize: style.tabSize,
+  })
+
+  mirror.replaceChildren(...textarea.value.split('\n').map(line => {
+    const row = document.createElement('div')
+    row.textContent = line || '\u200b' // keep empty lines one row tall
+    return row
+  }))
+  lineHeights.value = Array.from(mirror.children, row => row.getBoundingClientRect().height)
+  syncScroll()
+}
+
+const scheduleMeasure = () => {
+  if (measureFrame === null) measureFrame = requestAnimationFrame(measureLineHeights)
+}
+
+// The textarea is only rendered while a note is open, so (re)observe it whenever it mounts
+watch(textareaRef, (el, prev) => {
+  if (prev) resizeObserver?.unobserve(prev)
+  if (el) resizeObserver?.observe(el)
+})
+
+watch(
+  () => [store.activeNote?.content, store.activeNoteId, store.theme],
+  () => nextTick(scheduleMeasure),
+  { immediate: true }
+)
 
 const conflict = computed(() =>
   store.activeNoteId ? store.conflicts[store.activeNoteId] : undefined
@@ -370,7 +449,12 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
 
     <div class="editor-wrapper">
       <div class="line-numbers" ref="lineNumbersRef">
-        <div v-for="n in lineNumbers" :key="n" class="line-number">{{ n }}</div>
+        <div
+          v-for="n in lineNumbers"
+          :key="n"
+          class="line-number"
+          :style="lineHeights[n - 1] ? { height: `${lineHeights[n - 1]}px` } : undefined"
+        >{{ n }}</div>
       </div>
       <textarea 
         ref="textareaRef"
