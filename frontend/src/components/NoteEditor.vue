@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useNoteStore } from '../stores/noteStore'
 
 const store = useNoteStore()
@@ -21,6 +21,48 @@ const lineNumbers = computed(() => {
   const lines = (store.activeNote?.content || '').split('\n').length
   return Array.from({ length: Math.max(lines, 1) }, (_, i) => i + 1)
 })
+
+const conflict = computed(() =>
+  store.activeNoteId ? store.conflicts[store.activeNoteId] : undefined
+)
+
+const saveStatus = computed(() => {
+  const id = store.activeNoteId
+  if (conflict.value) return 'Not saved: changed in another window'
+  if (id && store.remoteUpdateNotice === id) return 'Updated from another window'
+  if (store.error) return store.error
+  return store.isSaving ? 'Saving...' : 'All changes saved'
+})
+
+// When the content is replaced from another window while the textarea is focused,
+// keep the caret where it was instead of letting it jump to the end
+watch(() => [store.activeNoteId, store.activeNote?.content] as const, ([id], [prevId]) => {
+  const textarea = textareaRef.value
+  if (!textarea || id !== prevId || document.activeElement !== textarea) return
+  const { selectionStart, selectionEnd } = textarea
+  nextTick(() => {
+    if (document.activeElement === textarea) textarea.setSelectionRange(selectionStart, selectionEnd)
+  })
+})
+
+/**
+ * Replaces [start, end) of the textarea through the browser's own editing pipeline, so the
+ * change lands on the native undo stack and Cmd/Ctrl+Z can revert it. Assigning the value
+ * programmatically (as the line shortcuts used to) wipes the undo history instead.
+ * The resulting `input` event saves the note via handleContentChange.
+ */
+const replaceRange = (textarea: HTMLTextAreaElement, start: number, end: number, text: string) => {
+  textarea.focus()
+  textarea.setSelectionRange(start, end)
+  // execCommand is deprecated but still the only way to edit a textarea with undo support
+  const handled = text
+    ? document.execCommand('insertText', false, text)
+    : document.execCommand('delete', false)
+  if (!handled) {
+    textarea.setRangeText(text, start, end, 'end')
+    textarea.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+}
 
 const syncScroll = () => {
   if (textareaRef.value && lineNumbersRef.value) {
@@ -93,13 +135,10 @@ const duplicateCurrentLine = () => {
   if (lineEnd === -1) lineEnd = value.length
 
   const lineContent = value.substring(lineStart, lineEnd)
-  const newValue = value.substring(0, lineEnd) + '\n' + lineContent + value.substring(lineEnd)
+  replaceRange(textarea, lineEnd, lineEnd, '\n' + lineContent)
 
-  store.updateNote(store.activeNoteId, { content: newValue })
-  
   nextTick(() => {
     const offset = lineContent.length + 1
-    textarea.focus()
     textarea.setSelectionRange(selectionStart + offset, selectionEnd + offset)
     syncScroll()
   })
@@ -113,29 +152,25 @@ const cutCurrentLine = async () => {
   const lineStart = value.lastIndexOf('\n', selectionStart - 1) + 1
   let lineEnd = value.indexOf('\n', selectionStart)
   
+  // Range to remove: the line plus its trailing newline, or for the last line its
+  // preceding newline, so no empty line is left behind
   let lineToCut = ''
-  let newValue = ''
-  let newCursorPos = lineStart
+  let removeStart = lineStart
+  let removeEnd = value.length
 
   if (lineEnd === -1) {
     lineToCut = value.substring(lineStart)
-    newValue = value.substring(0, lineStart)
-    if (lineStart > 0 && newValue.endsWith('\n')) {
-        newValue = newValue.slice(0, -1)
-        newCursorPos = Math.max(0, lineStart - 1)
-    }
+    if (lineStart > 0) removeStart = lineStart - 1
   } else {
-    lineToCut = value.substring(lineStart, lineEnd + 1)
-    newValue = value.substring(0, lineStart) + value.substring(lineEnd + 1)
-    newCursorPos = lineStart
+    lineToCut = value.substring(lineStart, lineEnd)
+    removeEnd = lineEnd + 1
   }
 
   try {
-    await navigator.clipboard.writeText(lineToCut.endsWith('\n') ? lineToCut.slice(0, -1) : lineToCut)
-    store.updateNote(store.activeNoteId, { content: newValue })
+    await navigator.clipboard.writeText(lineToCut)
+    replaceRange(textarea, removeStart, removeEnd, '')
     nextTick(() => {
-      textarea.focus()
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
+      textarea.setSelectionRange(removeStart, removeStart)
       syncScroll()
     })
   } catch (err) {
@@ -177,8 +212,11 @@ const moveLine = (direction: number) => {
     newLines[targetIndex] = temp
   }
 
-  const newValue = newLines.join('\n')
-  store.updateNote(store.activeNoteId, { content: newValue })
+  // Only replace the two swapped lines, so undo restores exactly that change
+  const firstIndex = Math.min(lineIndex, targetIndex)
+  const spanStart = lines.slice(0, firstIndex).reduce((sum, line) => sum + line.length + 1, 0)
+  const spanEnd = spanStart + (lines[firstIndex]?.length ?? 0) + 1 + (lines[firstIndex + 1]?.length ?? 0)
+  replaceRange(textarea, spanStart, spanEnd, newLines.slice(firstIndex, firstIndex + 2).join('\n'))
 
   nextTick(() => {
     let newPos = 0
@@ -322,6 +360,14 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
       </div>
     </div>
     
+    <div v-if="conflict" class="conflict-banner" role="alert">
+      <span>This note was changed in another window. Your edits here are not saved yet.</span>
+      <div class="conflict-actions">
+        <button @click="store.loadLatest(conflict.id)" title="Discard your edits and show the other window's version">Load latest</button>
+        <button @click="store.keepMine(conflict.id)" class="keep-mine" title="Overwrite the other window's version with yours">Keep mine</button>
+      </div>
+    </div>
+
     <div class="editor-wrapper">
       <div class="line-numbers" ref="lineNumbersRef">
         <div v-for="n in lineNumbers" :key="n" class="line-number">{{ n }}</div>
@@ -342,7 +388,7 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
         <button @click="$emit('openDeleteModal')" class="delete-btn">Delete Note</button>
         <button @click="$emit('openClearAllModal')" class="clear-all-btn">Clear All Notes</button>
         <span style="flex: 1"></span>
-        <span>{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
+        <span :class="{ 'status-warning': conflict }">{{ saveStatus }}</span>
         <button @click="store.logout" class="logout-btn">Logout</button>
       </template>
       <template v-else>
@@ -350,7 +396,7 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
           {{ store.activeNote.isPublicEditable ? 'Public View (Editable)' : 'Public View (Read-Only)' }}
         </span>
         <span style="flex: 1"></span>
-        <span v-if="store.activeNote.isPublicEditable">{{ store.isSaving ? 'Saving...' : 'All changes saved' }}</span>
+        <span v-if="store.activeNote.isPublicEditable" :class="{ 'status-warning': conflict }">{{ saveStatus }}</span>
         <button @click="store.isAuthenticated = false; store.publicNote = null; store.activeNoteId = null" class="logout-btn">Back to Login</button>
       </template>
     </div>

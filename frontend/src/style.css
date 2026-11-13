@@ -1013,3 +1013,59 @@ body {
     font-size: 0.7rem;
   }
 }
+
+/* Edits from other windows */
+.tab-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  vertical-align: middle;
+}
+
+.tab-dot.conflict {
+  background: #f59e0b;
+}
+
+.conflict-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  background: var(--tab-bg);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.conflict-actions button {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+}
+
+.conflict-actions button.keep-mine {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.status-warning {
+  color: #d97706;
+  font-weight: 600;
+}

@@ -28,7 +28,14 @@ export const UpdateNoteSchema = NoteSchema.extend({
   isPublicEditable: z.number().int(),
 }).partial().omit({
   id: true,
-  createdAt: true
+  createdAt: true,
+  updatedAt: true // set by the server only
 });
 
 export type UpdateNoteInput = z.infer<typeof UpdateNoteSchema>;
+
+/**
+ * PATCH body: the fields to change, plus the `updatedAt` of the version the edit is based on.
+ * If the note has changed since, the server rejects the edit with 409 instead of overwriting.
+ */
+export type UpdateNoteRequest = UpdateNoteInput & { baseUpdatedAt?: string };

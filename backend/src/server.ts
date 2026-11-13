@@ -154,6 +154,36 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// Fields whose edits bump `updatedAt` and are guarded against overwriting a newer version.
+// Sharing flags and position are metadata: they never conflict and don't change the version.
+const VERSIONED_FIELDS = ['title', 'content', 'slug'] as const;
+
+/**
+ * Applies a PATCH to a note with optimistic concurrency control.
+ * If the request edits a versioned field and sends `baseUpdatedAt` (the version the client's
+ * edit is based on) that no longer matches the stored note, nothing is written and 409 is
+ * returned with the current note so the client can let the user choose which version wins.
+ */
+const applyNoteUpdate = (res: Response, id: string, current: { updatedAt: string }, body: unknown) => {
+  const { baseUpdatedAt, ...fields } = (body ?? {}) as Record<string, unknown>;
+  const input = UpdateNoteSchema.parse(fields);
+  const touchesVersioned = VERSIONED_FIELDS.some(field => field in input);
+
+  if (touchesVersioned && typeof baseUpdatedAt === 'string' && baseUpdatedAt !== current.updatedAt) {
+    return res.status(409).json({ error: 'Note was changed elsewhere', note: current });
+  }
+
+  const assignments = Object.keys(input).map(key => `${key} = @${key}`);
+  if (touchesVersioned) assignments.push('updatedAt = @updatedAt');
+
+  if (assignments.length > 0) {
+    db.prepare(`UPDATE notes SET ${assignments.join(', ')} WHERE id = @id`)
+      .run({ ...input, ...(touchesVersioned && { updatedAt: new Date().toISOString() }), id });
+  }
+
+  res.json(db.prepare('SELECT * FROM notes WHERE id = ?').get(id));
+};
+
 // Login route
 app.post('/api/login', loginLimiter, (req, res) => {
   const { password } = req.body ?? {};
@@ -203,21 +233,12 @@ app.get('/api/public/notes/:id', publicApiLimiter, (req, res) => {
 app.patch('/api/public/notes/:id', publicApiLimiter, (req, res) => {
   const { id } = req.params;
   try {
-    const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1 AND isPublicEditable = 1').get(id);
+    const note = db.prepare('SELECT * FROM notes WHERE id = ? AND isPublic = 1 AND isPublicEditable = 1').get(id) as { updatedAt: string } | undefined;
     if (!note) {
       return res.status(404).json({ error: 'Public editable note not found' });
     }
 
-    const input = UpdateNoteSchema.parse(req.body);
-    const updatedAt = new Date().toISOString();
-
-    const fields = Object.keys(input).map(key => `${key} = @${key}`).concat('updatedAt = @updatedAt').join(', ');
-    const update = db.prepare(`UPDATE notes SET ${fields} WHERE id = @id`);
-    
-    update.run({ ...input, updatedAt, id });
-
-    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
-    res.json(updatedNote);
+    applyNoteUpdate(res, String(id), note, req.body);
   } catch (error) {
     handleError(res, error, 'Failed to update note');
   }
@@ -272,14 +293,15 @@ app.post('/api/notes', (req, res) => {
 // Reorder notes
 app.patch('/api/notes/reorder', (req, res) => {
   try {
-    const { orders } = req.body; 
-    const updatedAt = new Date().toISOString();
+    const { orders } = req.body;
 
-    const update = db.prepare('UPDATE notes SET positionIndex = ?, updatedAt = ? WHERE id = ?');
-    
+    // Reordering is metadata: it must not bump updatedAt, or every open window would see
+    // its notes as "changed elsewhere" after a drag in another window.
+    const update = db.prepare('UPDATE notes SET positionIndex = ? WHERE id = ?');
+
     const transaction = db.transaction((data) => {
       for (const item of data) {
-        update.run(item.positionIndex, updatedAt, item.id);
+        update.run(item.positionIndex, item.id);
       }
     });
 
@@ -294,21 +316,12 @@ app.patch('/api/notes/reorder', (req, res) => {
 app.patch('/api/notes/:id', (req, res) => {
   const { id } = req.params;
   try {
-    const input = UpdateNoteSchema.parse(req.body);
-    const updatedAt = new Date().toISOString();
-
-    const currentNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
+    const currentNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id) as { updatedAt: string } | undefined;
     if (!currentNote) {
       return res.status(404).json({ error: 'Note not found' });
     }
 
-    const fields = Object.keys(input).map(key => `${key} = @${key}`).concat('updatedAt = @updatedAt').join(', ');
-    const update = db.prepare(`UPDATE notes SET ${fields} WHERE id = @id`);
-    
-    update.run({ ...input, updatedAt, id });
-
-    const updatedNote = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
-    res.json(updatedNote);
+    applyNoteUpdate(res, String(id), currentNote, req.body);
   } catch (error) {
     handleError(res, error, 'Failed to update note');
   }

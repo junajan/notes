@@ -15,6 +15,13 @@ const updateMobileStatus = () => {
   isMobile.value = window.matchMedia('(max-width: 768px)').matches
 }
 
+// Keep this window in sync with edits made in other windows/devices
+const REFRESH_INTERVAL_MS = 15000
+let refreshTimer: ReturnType<typeof setInterval> | null = null
+const refreshIfVisible = () => {
+  if (document.visibilityState === 'visible') store.refreshFromServer()
+}
+
 onMounted(async () => {
   await store.checkAuth()
   
@@ -44,6 +51,9 @@ onMounted(async () => {
   }
   
   window.addEventListener('resize', updateMobileStatus)
+  window.addEventListener('focus', refreshIfVisible)
+  document.addEventListener('visibilitychange', refreshIfVisible)
+  refreshTimer = setInterval(refreshIfVisible, REFRESH_INTERVAL_MS)
 })
 
 watch(() => store.activeNoteId, (newId) => {
@@ -56,6 +66,9 @@ watch(() => store.activeNoteId, (newId) => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', updateMobileStatus)
+  window.removeEventListener('focus', refreshIfVisible)
+  document.removeEventListener('visibilitychange', refreshIfVisible)
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 
 const confirmDelete = async () => {

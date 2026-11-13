@@ -33,6 +33,16 @@ const onDragEnd = () => {
           @click="store.activeNoteId = note.id"
         >
           {{ note.title || 'Untitled' }}
+          <span
+            v-if="note.id in store.conflicts"
+            class="tab-dot conflict"
+            title="Changed in another window, your edits are not saved"
+          ></span>
+          <span
+            v-else-if="store.changedElsewhere[note.id]"
+            class="tab-dot"
+            title="Updated from another window"
+          ></span>
           <svg v-if="note.isPublic" class="public-indicator" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="2" y1="12" x2="22" y2="12"></line>
