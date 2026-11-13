@@ -7,7 +7,7 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lineNumbersRef = ref<HTMLDivElement | null>(null)
 const copyFeedback = ref(false)
 
-defineEmits(['openDeleteModal', 'openClearAllModal'])
+defineEmits(['openDeleteModal'])
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeyDown, { capture: true })
@@ -386,7 +386,6 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
     <div class="status-bar">
       <template v-if="store.isAuthenticated">
         <button @click="$emit('openDeleteModal')" class="delete-btn">Delete Note</button>
-        <button @click="$emit('openClearAllModal')" class="clear-all-btn">Clear All Notes</button>
         <span style="flex: 1"></span>
         <span :class="{ 'status-warning': conflict }">{{ saveStatus }}</span>
         <button @click="store.logout" class="logout-btn">Logout</button>
@@ -404,6 +403,5 @@ const handleGlobalKeyDown = (e: KeyboardEvent) => {
   
   <div v-else class="editor-container" style="justify-content: center; align-items: center; color: var(--text-muted);">
     <p>Select a note or create a new one to get started.</p>
-    <button @click="$emit('openClearAllModal')" v-if="store.notes.length > 0" class="clear-all-btn" style="margin-top: 1rem;">Clear All Notes</button>
   </div>
 </template>

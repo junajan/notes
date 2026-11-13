@@ -9,7 +9,6 @@ import ConfirmationModal from './components/ConfirmationModal.vue'
 const store = useNoteStore()
 const isMobile = ref(window.matchMedia('(max-width: 768px)').matches)
 const showDeleteModal = ref(false)
-const showClearAllModal = ref(false)
 
 const updateMobileStatus = () => {
   isMobile.value = window.matchMedia('(max-width: 768px)').matches
@@ -78,10 +77,6 @@ const confirmDelete = async () => {
   }
 }
 
-const confirmClearAll = async () => {
-  await store.deleteAllNotes()
-  showClearAllModal.value = false
-}
 </script>
 
 <template>
@@ -104,7 +99,6 @@ const confirmClearAll = async () => {
     
     <NoteEditor 
       @open-delete-modal="showDeleteModal = true" 
-      @open-clear-all-modal="showClearAllModal = true" 
     />
 
     <ConfirmationModal 
@@ -115,16 +109,6 @@ const confirmClearAll = async () => {
       is-danger
       @confirm="confirmDelete"
       @cancel="showDeleteModal = false"
-    />
-
-    <ConfirmationModal 
-      :show="showClearAllModal"
-      title="Clear All Notes"
-      :message="`Are you sure you want to delete <strong>ALL</strong> ${store.notes.length} notes? This action is permanent and cannot be undone.`"
-      confirm-text="Yes, Delete Everything"
-      is-danger
-      @confirm="confirmClearAll"
-      @cancel="showClearAllModal = false"
     />
   </div>
 </template>

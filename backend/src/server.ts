@@ -327,16 +327,6 @@ app.patch('/api/notes/:id', (req, res) => {
   }
 });
 
-// Delete all notes
-app.delete('/api/notes/clear', authenticate, (req, res) => {
-  try {
-    db.prepare('DELETE FROM notes').run();
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete all notes' });
-  }
-});
-
 // Delete note
 app.delete('/api/notes/:id', (req, res) => {
   const { id } = req.params;

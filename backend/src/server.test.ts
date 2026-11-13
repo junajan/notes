@@ -162,6 +162,13 @@ describe('Notes API', () => {
       expect(res.body.content).toBe('Unversioned');
     });
 
+    it('has no delete-all endpoint', async () => {
+      await request(app).delete('/api/notes/clear').set('Cookie', cookie).set('X-Notes-Requested-With', 'XMLHttpRequest');
+
+      const count = db.prepare('SELECT COUNT(*) AS n FROM notes').get() as { n: number };
+      expect(count.n).toBe(1);
+    });
+
     it('ignores a client-supplied updatedAt', async () => {
       const res = await patch({ content: 'x', updatedAt: '1999-01-01T00:00:00.000Z', baseUpdatedAt: base });
 
