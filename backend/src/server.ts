@@ -156,7 +156,7 @@ const authenticate = (req: Request, res: Response, next: NextFunction) => {
 
 // Login route
 app.post('/api/login', loginLimiter, (req, res) => {
-  const { password } = req.body;
+  const { password } = req.body ?? {};
   if (password === APP_PASSWORD) {
     const token = jwt.sign({ authorized: true }, JWT_SECRET, { expiresIn: SESSION_DURATION });
     setAuthCookie(res, token);
@@ -340,7 +340,7 @@ app.delete('/api/notes/:id', (req, res) => {
 const frontendPath = path.join(__dirname, '../../frontend/dist');
 if (fs.existsSync(frontendPath)) {
   app.use(express.static(frontendPath));
-  app.get('*', (req, res) => {
+  app.get('/{*splat}', (req, res) => {
     if (!req.path.startsWith('/api')) {
       res.sendFile(path.join(frontendPath, 'index.html'));
     }
